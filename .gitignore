@@ -79,6 +79,7 @@ target/
 
 # Data 
 data/
+runs
 
 # IPython
 profile_default/
