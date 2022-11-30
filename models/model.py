@@ -125,14 +125,14 @@ class Generator(nn.Module):
 
 
 class LSGAN(nn.Module):
-    def __init__(self, train_loader, generator, discriminator, writer, latent_dim, lr_g, lr_d, checkpoint_path, num_epochs, add_loss, add_figure, save_ckpt):
+    def __init__(self, train_loader, generator, discriminator, writer, latent_dim, lr_g, lr_d, model_name, num_epochs, add_loss, add_figure, save_ckpt):
         super(LSGAN, self).__init__()
         self.train_loader = train_loader
         self.generator = generator
         self.discriminator = discriminator
         self.lr_d = lr_d
         self.lr_g = lr_g
-        self.checkpoint_path = "./trained_model/" + checkpoint_path + ".pt"
+        self.trained_model_path = "./trained_model/" + model_name + ".pt"
         self.writer = writer
         self.num_epochs = num_epochs
         self.latent_dim = latent_dim
@@ -140,10 +140,11 @@ class LSGAN(nn.Module):
         self.add_figure = add_figure
         self.save_ckpt = save_ckpt
 
+
     def load_checkpoint(self):
         optimizer_generator, optimizer_discriminator = self.configure_optimizer()
-        if os.path.isfile(self.checkpoint_path):
-            ckpt = torch.load(self.checkpoint_path)
+        if os.path.isfile(self.trained_model_path):
+            ckpt = torch.load(self.trained_model_path)
             self.discriminator.load_state_dict(ckpt["discriminator"])
             self.generator.load_state_dict(ckpt["generator"])
 
@@ -151,12 +152,13 @@ class LSGAN(nn.Module):
             optimizer_generator.load_state_dict(ckpt["optimizer_gen"])
 
             start_epoch = ckpt["epoch"]
-            print("model parameters loaded from " + self.checkpoint_path)
+            print("model parameters loaded from " + self.trained_model_path)
         else:
             start_epoch = 0
             print("new model")
-
+            
         return optimizer_discriminator, optimizer_generator, start_epoch
+
 
     def configure_optimizer(self):
         optimizer_generator = torch.optim.Adam(
@@ -166,6 +168,7 @@ class LSGAN(nn.Module):
             self.discriminator.parameters(), lr=self.lr_d
         )
         return optimizer_generator, optimizer_discriminator
+
 
     def train_step(self):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -252,18 +255,13 @@ class LSGAN(nn.Module):
                     generated_samples = generated_samples.cpu().detach()
 
                     figure = plt.figure()
-                    for i in range(4):
-                        ax = plt.subplot(1, 4, i + 1)
-                        img = plt.imshow(
-                            generated_samples[i].reshape(28, 28), cmap="gray_r"
-                        )
-                        plt.title(
-                            "label: " + str(mnist_labels[i].cpu().detach().numpy())
-                        )
+                    for i in range(16):
+                        ax = plt.subplot(4, 4, i+1)
+                        plt.imshow(generated_samples[i].reshape(28, 28), cmap='gray_r')
+                        plt.title("label: " + str(mnist_labels[i].cpu().detach().numpy()))
                         plt.xticks([])
                         plt.yticks([])
                     plt.tight_layout()
-                    plt.show()
 
                     self.writer.add_figure("4_mnist_images", figure, epoch)
                     self.writer.flush()
@@ -278,4 +276,4 @@ class LSGAN(nn.Module):
                         "optimizer_gen": optimizer_generator.state_dict(),
                         "optimizer_disc": optimizer_discriminator.state_dict(),
                     }
-                    torch.save(checkpoint, self.checkpoint_path)
+                    torch.save(checkpoint, self.trained_model_path)
