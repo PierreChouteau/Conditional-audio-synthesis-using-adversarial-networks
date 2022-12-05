@@ -1,5 +1,8 @@
 #ToDo : 4s, 16kHz, spectro, Mel (torchaudio),normaliser avec max de la banque, revenir Ã  l'audio avec Griffin-Lim
 #Normalisation entre -0.8 et 0.8
+#Dénormaliser en reconstruct et resample en fonction
+#gbittencourt pour le dataset
+#Faire comparaison en plot le spectro avant/après Griffin
 #Source tutos : https://pytorch.org/tutorials/beginner/audio_preprocessing_tutorial.html
 import torch
 import torchaudio
@@ -20,7 +23,7 @@ from torchaudio.utils import download_asset
 # import OS module
 import os
 
-plt.close('all')
+#plt.close('all')
 
 #-----------------------------Fonctions Helper - Uniquement affichage
 #Pour le modèle train, on ne devrait avoir besoin que de l'affichage des formes d'onde au fil des epoch
@@ -121,6 +124,11 @@ pd.set_option('display.max_columns', None)
 
 #------------------------------------Mes Fonctions
 
+def resampling(waveform, sample_rate, resample_rate):
+    resampler = T.Resample(sample_rate, resample_rate, dtype=waveform.dtype,lowpass_filter_width=128,rolloff=0.99, resampling_method="kaiser_window")
+    resampled_waveform = resampler(waveform)
+    return resampled_waveform
+
 def transfo(SAMPLE_WAV_PATH,n_fft,resample_rate,temps_sig,maxi=1.25):
     #-------------------------Ouverture d'un fichier et affichage spectro/waveform
     
@@ -129,29 +137,28 @@ def transfo(SAMPLE_WAV_PATH,n_fft,resample_rate,temps_sig,maxi=1.25):
     waveform, sample_rate = torchaudio.load(SAMPLE_WAV_PATH)
     waveform=waveform/(maxi*0.8)
     #print_stats(waveform, sample_rate=sample_rate)
-    #plot_waveform(waveform, sample_rate)
+    plot_waveform(waveform, sample_rate)
     #plot_specgram(waveform, sample_rate)
     #play_audio(waveform, sample_rate)
     
     #-----------------------Conversion de Sr
     
-    resampler = T.Resample(sample_rate, resample_rate, dtype=waveform.dtype,lowpass_filter_width=128,rolloff=0.99, resampling_method="kaiser_window")
-    resampled_waveform = resampler(waveform)
+    resampled_waveform=resampling(waveform,sample_rate,resample_rate)
     
     #-----------------------Découpe du signal resamplé à la bonne durée
     dur1=len(resampled_waveform[0])
-    print(resample_rate)
+    #print(resample_rate)
     durVoulue=int(temps_sig*resample_rate)
-    print(dur1,durVoulue)
+    #print(dur1,durVoulue)
     #print(resampled_waveform.shape)
     if durVoulue<=dur1:
         resampled_waveform=resampled_waveform[:durVoulue]
-        print(1)
-        print(resampled_waveform.shape)
+        #print(1)
+        #print(resampled_waveform.shape)
     else:
-        print(2)
+        #print(2)
         resampled_waveform=torch.cat((resampled_waveform,torch.zeros(1,durVoulue-dur1)),dim=1)
-        print(resampled_waveform.shape)
+        #print(resampled_waveform.shape)
     #plot_specgram(resampled_waveform, resample_rate)
     #plot_waveform(resampled_waveform, resample_rate)
     
@@ -196,7 +203,9 @@ def getmax(path):
 
 
 #-----------------------Reconstruction par Griffin-Lim
-def recons(melspec,n_fft,resample_rate):
+def recons(melspec,n_fft,resample_rate,maxi):
+    
+    melspec=melspec*(maxi*0.8)
 
     inverse_melscale_transform = T.InverseMelScale(n_stft=n_fft // 2 + 1) #On repasse en STFT pour Griffin-Lim
     rev_spec = inverse_melscale_transform(melspec)
@@ -209,7 +218,7 @@ def recons(melspec,n_fft,resample_rate):
     waveform_r = griffin_lim(rev_spec)#On applique Griffin-Lim
     
     plot_waveform(waveform_r, resample_rate, title="Reconstructed")
-    
+    return waveform_r
     
     
     
@@ -239,7 +248,7 @@ def dataloader(path,temps_sig,resample_rate,n_fft):
     
     
     
-    return melspecs
+    return melspecs,maxi
     
 #-----------------------------------------------------------Code
 
@@ -247,7 +256,6 @@ def dataloader(path,temps_sig,resample_rate,n_fft):
 path = "C:/Users/GaHoo/Desktop/Cours/ATIAM/2. Informatique/Projet/data/percussion"
 #dir_list = os.listdir(path)
 #print("Files and directories in '", path, "' :")
-# prints all files
 #print(dir_list)
 
 
@@ -256,12 +264,12 @@ resample_rate = 16000
 n_fft = 1024
 temps_sig=2
 
-dataset=dataloader(path,temps_sig,resample_rate,n_fft)
+dataset,maxi=dataloader(path,temps_sig,resample_rate,n_fft)
 
 #melspec=transfo(SAMPLE_WAV_PATH,n_fft,resample_rate,maxi)
 
 
-signal=recons(dataset[1],n_fft,resample_rate)
+signal=recons(dataset[40],n_fft,resample_rate,maxi)
     
     
 
