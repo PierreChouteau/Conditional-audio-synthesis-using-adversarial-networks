@@ -1,0 +1,32 @@
+generator_config:
+  latent_dim : 256
+  out_channels: 1
+  k_width: 3
+  k_heigth: 3
+  k_filters: 32
+  scale_factor: 2
+
+
+discriminator_config:
+  in_channels: 1
+  out_channels: 1
+  k_width: 3
+  k_heigth: 3
+  k_filters: 32
+  scale_factor: 2
+  ksize_down: 2
+  stride_down: 2
+
+gan_config: 
+  latent_dim: 256
+  lr_g: 1e-4
+  lr_d: 1e-4
+  model_name: 'test'
+  num_epochs: 100
+  add_loss: 31
+  add_figure: 31
+  save_ckpt: 31
+  critic_iteration: 5
+  lambda_gp: 10
+
+batch_size: 32
