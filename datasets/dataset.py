@@ -5,7 +5,7 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import os
 import json
-# from helper import *
+from helper import *
 
 
 class NSynthDataset(Dataset):
@@ -39,7 +39,7 @@ class NSynthDataset(Dataset):
     def waveform_to_mel(self, waveform, n_fft, sample_rate, resample_rate, temps_sig, maxi=1.25):
         #-------------------------Ouverture d'un fichier et affichage spectro/waveform
         # waveform, sample_rate = torchaudio.load(SAMPLE_WAV_PATH)
-        waveform = waveform / (maxi*0.8)
+        waveform = waveform
 
         #-----------------------Conversion de Sr
         resampled_waveform = self.resampling(waveform, sample_rate, resample_rate)
@@ -54,44 +54,31 @@ class NSynthDataset(Dataset):
 
         #----------------------Spectro de Mel
         n_mels = 128
+        hop_length=63
         
         transform = T.MelSpectrogram(
             sample_rate=sample_rate,
             n_fft=n_fft,
             center=True,
             pad_mode="reflect",
+            hop_length=hop_length,
+            pad=250,
             power=2.0,
             norm='slaney',
             onesided=True,
             n_mels=n_mels,
             mel_scale="htk",
             )
-        melspec = transform(resampled_waveform)
+        melspec = transform(resampled_waveform)/ (maxi*0.8)
         return melspec
-
-
-    #-----------------------Reconstruction par Griffin-Lim
-    def mel_to_waveform(self, melspec, n_fft, resample_rate, maxi):
-        melspec=melspec*(maxi*0.8)
-
-        inverse_melscale_transform = T.InverseMelScale(n_stft=n_fft // 2 + 1) #On repasse en STFT pour Griffin-Lim
-        rev_spec = inverse_melscale_transform(melspec)
-        
-        # Declaration de Griffin-Lim
-        griffin_lim = T.GriffinLim(
-            n_fft=n_fft,
-        )
-        waveform_r = griffin_lim(rev_spec) # On applique Griffin-Lim
-        return waveform_r
     
     
-    def __getitem__(self, idx):
+    def __getitem__(self, idx,maxi=1.25):
         audio_path = os.path.join(self.audio_dir, self.file_names[idx])
         waveform, sample_rate = torchaudio.load(audio_path)
         resample_rate = 16000
         n_fft = 1024
-        temps_sig=2
-        maxi=1.25
+        temps_sig=4
         
         melspec = self.waveform_to_mel(waveform, n_fft, sample_rate, resample_rate, temps_sig, maxi=1.25) / (maxi*0.8)
         label = self.labels[self.file_names[idx][:-4]]
@@ -100,30 +87,22 @@ class NSynthDataset(Dataset):
         
         
         
-# #----------------------- DataLoader complet ---------------------------------------------
-# def dataloader(path,temps_sig,resample_rate,n_fft):
-    
-#     dir_list = os.listdir(path)
-#     maxi = 0
-#     melspecs = []
-    
-#     for i in range(0,len(dir_list)):
-#         SAMPLE_WAV_PATH = dir_list[i]
+#-----------------------Reconstruction par Griffin-Lim
+def mel_to_waveform(self, melspec, n_fft, resample_rate, maxi):
+    melspec=melspec*(maxi*0.8)
 
-#         melspec = waveform_to_mel(path+"/"+SAMPLE_WAV_PATH,n_fft,resample_rate,temps_sig,maxi=1.25)
-#         melspecs.append(melspec)
+    inverse_melscale_transform = T.InverseMelScale(n_stft=n_fft // 2 + 1) #On repasse en STFT pour Griffin-Lim
+    rev_spec = inverse_melscale_transform(melspec)
+    
+    # Declaration de Griffin-Lim
+    griffin_lim = T.GriffinLim(
+        n_fft=n_fft,
+    )
+    waveform_r = griffin_lim(rev_spec) # On applique Griffin-Lim
+    return waveform_r
         
-#         #Uniquement si max sur le Mel Spectro
-#         abso = abs(melspec.numpy())
-#         max1 = np.amax(abso[0])
-#         maxi = max(maxi,max1)
-        
-#     for u in melspecs:
-#         u = u.clone().detach().requires_grad_(True)/(maxi*0.8)
-        
-#     return melspecs, maxi
-        
-        
+
+
         
 # TEST = False
 # if TEST:
@@ -147,4 +126,14 @@ class NSynthDataset(Dataset):
 TEST = False
 if TEST:
     
-    nsynth_data = NSynthDataset(root_dir, usage = 'train')
+    loader = NSynthDataset(root_dir, usage = 'train')
+
+    maxi=0 
+    melspecs=[]
+    for i in range(1,len(dir_list)): #Obtention de maxi : à mettre dans le config ?
+        melspec=loader.__getitem__(i)
+        melspecs.append(melspec)
+
+        abso=abs(melspec.numpy())
+        max1=np.amax(abso[0])
+        maxi=max(maxi,max1)
