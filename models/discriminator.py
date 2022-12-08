@@ -1,7 +1,8 @@
 import torch 
 import torch.nn as nn
-from generator import Generator
+# from generator import Generator
 
+from torch.nn.init import calculate_gain, kaiming_normal_
 
 class Reshape(torch.nn.Module):
     def __init__(self, outer_shape):
@@ -63,6 +64,13 @@ class Discriminator(nn.Module):
             nn.Linear(self.k_filters*(2**3)*2*16, self.out_channels),
         )
         
+        
+    def initialize_weights(self):
+        for m in self.model.modules():
+            if isinstance(m, (nn.Conv2d)):
+                kaiming_normal_(m.weight, a=calculate_gain('conv2d'))
+        
+        
     def forward(self, x):
         output = self.model(x)
         return output
@@ -72,7 +80,10 @@ def test_disc():
     noise = torch.randn(8,256)
     
     gen = Generator()
+    gen.initialize_weights()
+    
     disc = Discriminator()
+    disc.initialize_weights()
 
     fake = gen(noise)
     print(fake[0:2])
@@ -80,4 +91,4 @@ def test_disc():
     print(fake.size(), result.size())
     print(result)
     
-test_disc()
+# test_disc()

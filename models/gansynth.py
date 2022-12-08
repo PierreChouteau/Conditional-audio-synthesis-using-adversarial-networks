@@ -136,7 +136,9 @@ class GANSynth(nn.Module):
                     self.writer.add_scalar(
                         "Loss/Discriminator_train", loss_critic, epoch
                     )
-                    self.writer.add_scalar("Loss/Generator_train", loss_generator, epoch)
+                    self.writer.add_scalar(
+                        "Loss/Generator_train", loss_generator, epoch
+                    )
                     self.writer.flush()
                     
                 # add generated pictures in tensorboard

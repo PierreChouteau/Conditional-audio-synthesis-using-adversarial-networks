@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from torch.nn.init import calculate_gain, kaiming_normal_
+
 
 class Reshape(torch.nn.Module):
     def __init__(self, outer_shape):
@@ -74,7 +76,12 @@ class Generator(nn.Module):
             nn.Conv2d(self.k_filters, self.out_channels, kernel_size=(1,1), padding=padding, bias=False),
             nn.Tanh(),
         )
-        
+    
+    def initialize_weights(self):
+        for m in self.model.modules():
+            if isinstance(m, (nn.Conv2d)):
+                kaiming_normal_(m.weight, a=calculate_gain('conv2d'))
+    
     def forward(self, x):
         x = x.view(-1, x.size(-1), 1, 1)
         output = self.model(x)

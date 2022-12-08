@@ -17,6 +17,7 @@ discriminator_config:
   ksize_down: 2
   stride_down: 2
 
+
 gan_config: 
   latent_dim: 256
   lr_g: 1e-4
@@ -29,4 +30,7 @@ gan_config:
   critic_iteration: 5
   lambda_gp: 10
 
-batch_size: 32
+
+dataset:
+  batch_size: 32
+  root_dir: None

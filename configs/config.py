@@ -6,17 +6,21 @@ import os
 class Generator_config(BaseModel):
     latent_dim: int
     out_channels: int
-    num_filters: int
-    num_classes: int
-    kernel_size: int 
+    k_width: int
+    k_heigth: int
+    k_filters: int
+    scale_factor: int
     
 
 class Discriminator_config(BaseModel):
     in_channels: int
-    num_filters: int
-    num_classes: int 
-    kernel_size: int
-    dropout: float
+    out_channels: int
+    k_width: int
+    k_heigth: int
+    k_filters: int
+    scale_factor: int
+    ksize_down: int
+    stride_down: int
     
     
 class GAN_config(BaseModel):
@@ -31,12 +35,17 @@ class GAN_config(BaseModel):
     critic_iteration: int
     lambda_gp: int
     
+    
+class Dataset(BaseModel):
+    batch_size: int
+    root_dir: str
+    
 
 class MainConfig(BaseModel):
     gan_config: GAN_config = None
     discriminator_config: Discriminator_config = None
     generator_config: Generator_config = None
-    batch_size: int
+    dataset: Dataset = None
 
 
 
@@ -48,7 +57,7 @@ def load_config(yaml_filepath="config.yaml"):
                 "gan_config": GAN_config(**config_dict["gan_config"]),
                 "discriminator_config": Discriminator_config(**config_dict["discriminator_config"]),
                 "generator_config": Generator_config(**config_dict["generator_config"]),
-                "batch_size": config_dict["batch_size"]
+                "dataset": Dataset(**config_dict["dataset"]),
             }
             main_config = MainConfig(**model_dict)
             return main_config
