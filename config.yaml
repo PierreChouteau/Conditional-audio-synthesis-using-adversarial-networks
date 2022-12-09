@@ -32,5 +32,5 @@ gan_config:
 
 
 dataset:
-  batch_size: 32
-  root_dir: None
+  batch_size: 8
+  root_dir: "/fast-1/atiam22-23/nsynth/"

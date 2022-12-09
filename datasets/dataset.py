@@ -5,11 +5,11 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import os
 import json
-from helper import *
+from .helper import *
 
 
 class NSynthDataset(Dataset):
-    def __init__(self, root_dir, usage = 'train'):
+    def __init__(self, root_dir, usage = 'train', maxi=1.25):
         self.root_dir = root_dir
         train_valid_test = {
             'train' : 'nsynth-train',
@@ -22,6 +22,7 @@ class NSynthDataset(Dataset):
         self.file_names = os.listdir(self.audio_dir)
 
         self.labels = json.load(open(os.path.join(self.set_dir,'examples.json')))
+        self.maxi = maxi
        
        
     def __len__(self):
@@ -36,7 +37,7 @@ class NSynthDataset(Dataset):
         return resampled_waveform
 
 
-    def waveform_to_mel(self, waveform, n_fft, sample_rate, resample_rate, temps_sig, maxi=1.25):
+    def waveform_to_mel(self, waveform, n_fft, sample_rate, resample_rate, temps_sig):
         #-------------------------Ouverture d'un fichier et affichage spectro/waveform
         # waveform, sample_rate = torchaudio.load(SAMPLE_WAV_PATH)
         waveform = waveform
@@ -54,7 +55,7 @@ class NSynthDataset(Dataset):
 
         #----------------------Spectro de Mel
         n_mels = 128
-        hop_length=63
+        hop_length = 63
         
         transform = T.MelSpectrogram(
             sample_rate=sample_rate,
@@ -69,18 +70,18 @@ class NSynthDataset(Dataset):
             n_mels=n_mels,
             mel_scale="htk",
             )
-        melspec = transform(resampled_waveform)/ (maxi*0.8)
+        melspec = transform(resampled_waveform)/ (self.maxi*0.8)
         return melspec
     
     
-    def __getitem__(self, idx,maxi=1.25):
+    def __getitem__(self, idx):
         audio_path = os.path.join(self.audio_dir, self.file_names[idx])
         waveform, sample_rate = torchaudio.load(audio_path)
         resample_rate = 16000
         n_fft = 1024
-        temps_sig=4
+        temps_sig = 4
         
-        melspec = self.waveform_to_mel(waveform, n_fft, sample_rate, resample_rate, temps_sig, maxi=1.25) / (maxi*0.8)
+        melspec = self.waveform_to_mel(waveform, n_fft, sample_rate, resample_rate, temps_sig) / (self.maxi*0.8)
         label = self.labels[self.file_names[idx][:-4]]
         
         return melspec, label['instrument_family']
@@ -126,14 +127,24 @@ def mel_to_waveform(self, melspec, n_fft, resample_rate, maxi):
 TEST = False
 if TEST:
     
-    loader = NSynthDataset(root_dir, usage = 'train')
+    loader = NSynthDataset("/fast-1/atiam22-23/nsynth", usage = 'train')
+    
+    maxi = 0 
+    for i, (mel_spec, label) in enumerate(loader):
+        abso = abs(mel_spec.numpy())
+        max1 = np.amax(abso[0])
+        maxi = max(maxi, max1)
+        if i > 50000:
+            print(maxi)
+            break
+        
+        
+    # maxi=0 
+    # melspecs=[]
+    # for i in range(0,len(dir_list)): #Obtention de maxi : à mettre dans le config ?
+    #     melspec=loader.__getitem__(i)
+    #     melspecs.append(melspec)
 
-    maxi=0 
-    melspecs=[]
-    for i in range(1,len(dir_list)): #Obtention de maxi : à mettre dans le config ?
-        melspec=loader.__getitem__(i)
-        melspecs.append(melspec)
-
-        abso=abs(melspec.numpy())
-        max1=np.amax(abso[0])
-        maxi=max(maxi,max1)
+    #     abso=abs(melspec.numpy())
+    #     max1=np.amax(abso[0])
+    #     maxi=max(maxi,max1)

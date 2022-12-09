@@ -56,23 +56,24 @@ class GANSynth(nn.Module):
         return optimizer_generator, optimizer_discriminator
     
     
-    def gradient_penalty(self, real, fake, device="cpu"):
-        batch_size, C, H, W = real.shape
-        alpha = torch.rand((batch_size, 1, 1, 1)).repeat(1, C, H, W).to(device)
-        interpolated_images = real * alpha + fake * (1 - alpha)
+    def gradient_penalty(self, real, fake, device):
+        alpha = torch.rand((real.size(0), 1, 1, 1)).to(device)
+        interpolated_images = (real * alpha + fake * (1 - alpha)).requires_grad_(True)
 
         # Calculate critic scores
         mixed_scores = self.critic(interpolated_images)
+        grad_outputs = torch.ones_like(mixed_scores, device=device, requires_grad=False)
 
         # Take the gradient of the scores with respect to the images
         gradient = torch.autograd.grad(
             inputs=interpolated_images,
             outputs=mixed_scores,
-            grad_outputs=torch.ones_like(mixed_scores),
+            grad_outputs=grad_outputs,
             create_graph=True,
             retain_graph=True,
+            only_inputs=True,
         )[0]
-        gradient = gradient.view(gradient.shape[0], -1)
+        gradient = gradient.view(gradient.size(0), -1)
         gradient_norm = gradient.norm(2, dim=1)
         gradient_penalty = torch.mean((gradient_norm - 1) ** 2)
         return gradient_penalty
@@ -84,7 +85,7 @@ class GANSynth(nn.Module):
         print("Optimizers, ok")
 
         for epoch in range(start_epoch, start_epoch + self.num_epochs):
-            for n, (real_samples, mnist_labels) in enumerate(self.train_loader):
+            for n, (real_samples, _) in enumerate(self.train_loader):
                 ##############################
                 ## update the discriminator
                 ##############################
@@ -92,19 +93,22 @@ class GANSynth(nn.Module):
                 real_samples = real_samples.to(device)
                 
                 for _ in range(self.critic_iteration):
-                    noise = torch.randn(batch_size, self.latent_dim, 1, 1).to(device)
+                    
+                    noise = torch.randn(batch_size, self.latent_dim).to(device)
                     fake_samples = self.generator(noise)
                     
-                    critic_real = self.critic(real_samples).reshape(-1)
-                    critic_fake = self.critic(fake_samples).reshape(-1)
+                    # zero the parameter gradients
+                    optimizer_critic.zero_grad()
+                    
+                    critic_real = self.critic(real_samples)
+                    critic_fake = self.critic(fake_samples.detach())
                     
                     gp = self.gradient_penalty(real_samples, fake_samples, device=device)
+                    # gp = 5
                     loss_critic = (
                         -(torch.mean(critic_real) - torch.mean(critic_fake)) + self.lambda_gp * gp
                     )
                     
-                    # zero the parameter gradients
-                    optimizer_critic.zero_grad()
                     # calculate the loss for the discriminator/critic
                     loss_critic.backward(retain_graph=True)
                     # update the discriminator/critic
@@ -117,7 +121,7 @@ class GANSynth(nn.Module):
                 optimizer_generator.zero_grad()
 
                 # forward du discriminator
-                disc_fake_output = self.critic(fake_samples).reshape(-1)
+                disc_fake_output = self.critic(fake_samples)
 
                 # calculate the loss for the generator
                 loss_generator = -torch.mean(disc_fake_output)
