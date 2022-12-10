@@ -45,7 +45,8 @@ def plot_waveform(waveform, sample_rate, title="Waveform", xlim=None, ylim=None)
   figure.suptitle(title)
   plt.show(block=False)
 
-  #-----Pour les spectros en STFT
+
+#-----Pour les spectros en STFT
 def plot_specgram(waveform, sample_rate, title="Spectrogram", xlim=None):
   waveform = waveform.numpy()
 
@@ -64,10 +65,11 @@ def plot_specgram(waveform, sample_rate, title="Spectrogram", xlim=None):
   figure.suptitle(title)
   plt.show(block=False)
   
-  #-----Pour les spectro de Mel
+  
+#-----Pour les spectro de Mel
 def plot_spectrogram(spec, title=None, ylabel='freq_bin', aspect='auto', xmax=None):
   fig, axs = plt.subplots(1, 1)
-  axs.set_title(title or 'Spectrogram (db)')
+  axs.set_title(title or 'Mel-Spectrogram (db)')
   axs.set_ylabel(ylabel)
   axs.set_xlabel('frame')
   im = axs.imshow(librosa.power_to_db(spec), origin='lower', aspect=aspect)

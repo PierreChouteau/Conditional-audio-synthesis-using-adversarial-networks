@@ -1,8 +1,9 @@
 import torch 
 import torch.nn as nn
-# from generator import Generator
+from .generator import Generator
 
 from torch.nn.init import calculate_gain, kaiming_normal_
+
 
 class Reshape(torch.nn.Module):
     def __init__(self, outer_shape):
@@ -76,19 +77,25 @@ class Discriminator(nn.Module):
         return output
 
 
-def test_disc():
-    noise = torch.randn(8,256)
-    
-    gen = Generator()
-    gen.initialize_weights()
-    
-    disc = Discriminator()
-    disc.initialize_weights()
 
-    fake = gen(noise)
-    print(fake[0:2])
-    result = disc(fake)
-    print(fake.size(), result.size())
-    print(result)
+
+#######################################################################################
+# Just a test function to verify the right behavior of the generator and discriminator
+#######################################################################################
+def test_disc(TEST=False):
+    if TEST:
+        noise = torch.randn(8,256)
+        
+        gen = Generator()
+        gen.initialize_weights()
+        
+        disc = Discriminator()
+        disc.initialize_weights()
+
+        fake = gen(noise)
+        print(fake[0:2])
+        result = disc(fake)
+        print(fake.size(), result.size())
+        print(result)
     
-# test_disc()
+test_disc(False)

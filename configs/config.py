@@ -39,6 +39,7 @@ class GAN_config(BaseModel):
 class Dataset(BaseModel):
     batch_size: int
     root_dir: str
+    maxi: float = None
     
 
 class MainConfig(BaseModel):

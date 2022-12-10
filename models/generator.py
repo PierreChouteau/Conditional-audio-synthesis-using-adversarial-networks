@@ -88,11 +88,15 @@ class Generator(nn.Module):
         return output
 
 
-def test_gen():
-    noise = torch.randn(8,256)
-    gen = Generator()
+###########################################################
+# Just a test function to verify the output generator size
+###########################################################
+def test_gen(TEST=False):
+    if TEST:
+        noise = torch.randn(8,256)
+        gen = Generator()
 
-    image_test = gen(noise)
-    print(noise.size(), image_test.size())
+        image_test = gen(noise)
+        print(noise.size(), image_test.size())
     
-test_gen()
+test_gen(False)

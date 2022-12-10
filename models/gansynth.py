@@ -3,13 +3,12 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 import os 
 
-import torchvision
-import torchvision.utils as vutils
-import numpy as np 
+from datasets import dataset
 
+import librosa
 
 class GANSynth(nn.Module):
-    def __init__(self, train_loader, generator, discriminator, writer, critic_iteration, lambda_gp, latent_dim, lr_g, lr_d, model_name, num_epochs, add_loss, add_figure, save_ckpt):
+    def __init__(self, train_loader, generator, discriminator, writer, maxi, critic_iteration, lambda_gp, latent_dim, lr_g, lr_d, model_name, num_epochs, add_loss, add_figure, save_ckpt):
         super(GANSynth, self).__init__()
         self.train_loader = train_loader
         self.generator = generator
@@ -25,6 +24,7 @@ class GANSynth(nn.Module):
         self.add_loss = add_loss
         self.add_figure = add_figure
         self.save_ckpt = save_ckpt
+        self.maxi = maxi
         
 
     def load_checkpoint(self):
@@ -90,6 +90,7 @@ class GANSynth(nn.Module):
                 ## update the discriminator
                 ##############################
                 batch_size = real_samples.size(0)
+                real_samples = real_samples.view(batch_size, real_samples.size(1), real_samples.size(3), real_samples.size(2))
                 real_samples = real_samples.to(device)
                 
                 for _ in range(self.critic_iteration):
@@ -104,7 +105,6 @@ class GANSynth(nn.Module):
                     critic_fake = self.critic(fake_samples.detach())
                     
                     gp = self.gradient_penalty(real_samples, fake_samples, device=device)
-                    # gp = 5
                     loss_critic = (
                         -(torch.mean(critic_real) - torch.mean(critic_fake)) + self.lambda_gp * gp
                     )
@@ -150,17 +150,33 @@ class GANSynth(nn.Module):
                     latent_space_samples = torch.randn(batch_size, self.latent_dim).to(device)
                     generated_samples = self.generator(latent_space_samples)
                     
-                    # take out (up to) 32 examples
-                    img_grid_real = torchvision.utils.make_grid(real_samples[:32], normalize=True)
-                    img_grid_fake = torchvision.utils.make_grid(generated_samples[:32], normalize=True)
-
-                    self.writer.add_image("Real", img_grid_real, global_step=n)
-                    self.writer.add_image("Fake", img_grid_fake, global_step=n)
-                    
-                    plt.title("Fake Images")
-                    plt.imshow(np.transpose(vutils.make_grid(generated_samples, padding=2, normalize=True).cpu(),(1,2,0)))
-                    plt.show()
-
+                    # for i, samples in enumerate(real_samples):
+                    #     if i < 3:
+                    #         samples = samples.view(samples.size(0), samples.size(2), samples.size(1)).cpu()
+                    #         audio_real = dataset.mel_to_waveform(samples.detach(), maxi=self.maxi)
+                    #         self.writer.add_audio('Real_audio/'+str(i), audio_real, epoch, sample_rate=16000)
+                                                                              
+                    #         fig, axs = plt.subplots(1, 1)
+                    #         im = axs.imshow(librosa.power_to_db(samples.detach()[0]), origin='lower', aspect='auto')
+                    #         self.writer.add_figure('Real_mel_spec/'+str(i), fig, epoch)
+                            
+                    #     else:
+                    #         break
+                        
+                        
+                    for i, samples in enumerate(generated_samples):
+                        if i < 3:
+                            samples = samples.view(samples.size(0), samples.size(2), samples.size(1)).cpu()
+                            audio_fake = dataset.mel_to_waveform(samples.detach(), maxi=self.maxi)
+                            self.writer.add_audio('Fake_audio/'+str(i), audio_fake, epoch, sample_rate=16000)
+                                                                              
+                            fig, axs = plt.subplots(1, 1)
+                            im = axs.imshow(librosa.power_to_db(samples.detach()[0]), origin='lower', aspect='auto')
+                            self.writer.add_figure('Fake_mel_spec/'+str(i), fig, epoch)
+                            
+                        else:
+                            break
+                            
                 # save wheckpoint
                 if n == self.save_ckpt:
                     # Save checkpoint if the model (to prevent training problem)
