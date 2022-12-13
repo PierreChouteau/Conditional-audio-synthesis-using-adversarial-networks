@@ -16,39 +16,40 @@ import numpy as np
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Permet de load toute la configuration de notre gan
-model_config = config.load_config("./config.yaml")
-
-model_config.gan_config.add_figure = model_config.dataset.batch_size - 1
-model_config.gan_config.add_loss = model_config.dataset.batch_size - 1
-model_config.gan_config.save_ckpt = model_config.dataset.batch_size - 1 
+model_config = config.load_config("./default_config.yaml")
 
 
 ###############################################
 # LOAD DATA
 ###############################################
-if model_config.dataset.maxi == 0.8:
-    nsynth_dataset = data.NSynthDataset(root_dir=model_config.dataset.root_dir, usage = 'test')
+if model_config.dataset.maxi == 1:
+    nsynth_dataset = data.NSynthDataset(root_dir=model_config.dataset.root_dir, filter_key='acoustic', usage = 'train')
     print('Dataset loaded without normalisation')
     
     # Test du max du dataset pour entier
     print('Research of the max in progress...')
-    maxi = 0 
-    for i, (mel_spec, label) in enumerate(nsynth_dataset):
-        abso = abs(mel_spec.numpy())
+    maxi = 0
+    for i, (melspec_log_norm, label, melspec_log) in enumerate(nsynth_dataset):
+        abso = np.abs(melspec_log.numpy())
         max1 = np.amax(abso[0])
         maxi = max(maxi, max1)
-    
+
     model_config.dataset.maxi = maxi
 
 print('Max value of the Melspec is '+str(model_config.dataset.maxi))
 
-
 maxi = model_config.dataset.maxi
-nsynth_dataset = data.NSynthDataset(root_dir=model_config.dataset.root_dir, usage='test', maxi=maxi)
+nsynth_dataset = data.NSynthDataset(root_dir=model_config.dataset.root_dir, filter_key='acoustic', usage='train', maxi=model_config.dataset.maxi)
+
 
 print('Normalised dataset loaded')
 train_loader = DataLoader(nsynth_dataset, batch_size=model_config.dataset.batch_size, shuffle=True, num_workers=0, drop_last=True)
 print('Dataloader is ready to go...')
+    
+# Add les figures, loss, checkpoint tout les 200 batchs
+model_config.gan_config.add_figure = 200
+model_config.gan_config.add_loss = 200
+model_config.gan_config.save_ckpt = 200
 
 
 # ###############################################

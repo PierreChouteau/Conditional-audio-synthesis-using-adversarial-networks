@@ -22,16 +22,16 @@ gan_config:
   latent_dim: 256
   lr_g: 8e-4
   lr_d: 8e-4
-  model_name: 'gansynth_test'
+  model_name: 'gansynth_test_4'
   num_epochs: 100
   add_loss: 0
   add_figure: 0
   save_ckpt: 0
   critic_iteration: 1
-  lambda_gp: 10
+  lambda_gp: 1
 
 
 dataset:
   batch_size: 6
   root_dir: "/fast-1/atiam22-23/nsynth/"
-  maxi: 17.838465
+  maxi: 12.347074 # valeur par défaut pour nsynth (avec que les samples acoustiques)

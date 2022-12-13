@@ -19,7 +19,7 @@ class PixelNormalization(nn.Module):
         super().__init__()
         
     def forward(self, x):
-        out = x  / (1/x.size(1) * (x**2).sum(dim=1, keepdim=True)).sqrt()
+        out = x  / (1/x.size(1) * (x**2).sum(dim=1, keepdim=True)  + 1e-8).sqrt()
         return out
 
 

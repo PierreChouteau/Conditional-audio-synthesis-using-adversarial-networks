@@ -2,10 +2,9 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import os 
-
 from datasets import dataset
-
 import librosa
+
 
 class GANSynth(nn.Module):
     def __init__(self, train_loader, generator, discriminator, writer, maxi, critic_iteration, lambda_gp, latent_dim, lr_g, lr_d, model_name, num_epochs, add_loss, add_figure, save_ckpt):
@@ -48,10 +47,10 @@ class GANSynth(nn.Module):
 
     def configure_optimizer(self):
         optimizer_generator = torch.optim.Adam(
-            self.generator.parameters(), lr=self.lr_g
+            self.generator.parameters(), lr=self.lr_g, betas=(0.0, 0.99)
         )
         optimizer_discriminator = torch.optim.Adam(
-            self.critic.parameters(), lr=self.lr_d
+            self.critic.parameters(), lr=self.lr_d, betas=(0.0, 0.99)
         )
         return optimizer_generator, optimizer_discriminator
     
@@ -85,7 +84,7 @@ class GANSynth(nn.Module):
         print("Optimizers, ok")
 
         for epoch in range(start_epoch, start_epoch + self.num_epochs):
-            for n, (real_samples, _) in enumerate(self.train_loader):
+            for n, (real_samples, _, _) in enumerate(self.train_loader):
                 ##############################
                 ## update the discriminator
                 ##############################
@@ -133,53 +132,60 @@ class GANSynth(nn.Module):
                 optimizer_generator.step()
 
                 # add loss in tensorboard 
-                if n == self.add_loss:
-                    print(f"Epoch: {epoch} Loss D.: {loss_critic}")
-                    print(f"Epoch: {epoch} Loss G.: {loss_generator}")
+                if n % self.add_loss == 0:
+                    print(f"Num_batch: {epoch*len(self.train_loader) + n} Loss D.: {loss_critic}")
+                    print(f"Num_batch: {epoch*len(self.train_loader) + n} Loss G.: {loss_generator}")
 
                     self.writer.add_scalar(
-                        "Loss/Discriminator_train", loss_critic, epoch
+                        "Loss/Discriminator_train", loss_critic, epoch*len(self.train_loader)*batch_size + n*batch_size
                     )
                     self.writer.add_scalar(
-                        "Loss/Generator_train", loss_generator, epoch
+                        "Loss/Generator_train", loss_generator, epoch*len(self.train_loader)*batch_size + n*batch_size
                     )
                     self.writer.flush()
                     
                 # add generated pictures in tensorboard
-                if n == self.add_figure:
+                if n % self.add_figure == 0:
                     latent_space_samples = torch.randn(batch_size, self.latent_dim).to(device)
                     generated_samples = self.generator(latent_space_samples)
                     
-                    # for i, samples in enumerate(real_samples):
-                    #     if i < 3:
-                    #         samples = samples.view(samples.size(0), samples.size(2), samples.size(1)).cpu()
-                    #         audio_real = dataset.mel_to_waveform(samples.detach(), maxi=self.maxi)
-                    #         self.writer.add_audio('Real_audio/'+str(i), audio_real, epoch, sample_rate=16000)
+                    for i, samples in enumerate(real_samples):
+                        if i < 3:
+                            samples = samples.view(samples.size(0), samples.size(2), samples.size(1))
+                            audio_real = dataset.mel_to_waveform(samples.detach(), maxi=self.maxi, device = device)
+                            self.writer.add_audio('Real_audio/'+str(i), audio_real.cpu(), epoch*len(self.train_loader) + n, sample_rate=16000)
                                                                               
-                    #         fig, axs = plt.subplots(1, 1)
-                    #         im = axs.imshow(librosa.power_to_db(samples.detach()[0]), origin='lower', aspect='auto')
-                    #         self.writer.add_figure('Real_mel_spec/'+str(i), fig, epoch)
+                            fig, axs = plt.subplots(1, 1)
+                            real_melspec_log_norm = samples.detach()[0]
+                            real_melspec_log = (real_melspec_log_norm + 0.8) * (self.maxi / (2 * 0.8))
+                            real_melspec = torch.exp(real_melspec_log) - 1
                             
-                    #     else:
-                    #         break
+                            im = axs.imshow(librosa.power_to_db(real_melspec.cpu()), origin='lower', aspect='auto')
+                            self.writer.add_figure('Real_mel_spec/'+str(i), fig, epoch*len(self.train_loader) + n)
+                            
+                        else:
+                            break
                         
                         
                     for i, samples in enumerate(generated_samples):
                         if i < 3:
-                            samples = samples.view(samples.size(0), samples.size(2), samples.size(1)).cpu()
-                            audio_fake = dataset.mel_to_waveform(samples.detach(), maxi=self.maxi)
-                            self.writer.add_audio('Fake_audio/'+str(i), audio_fake, epoch, sample_rate=16000)
+                            samples = samples.view(samples.size(0), samples.size(2), samples.size(1))
+                            audio_fake = dataset.mel_to_waveform(samples.detach(), maxi=self.maxi, device = device)
+                            self.writer.add_audio('Fake_audio/'+str(i), audio_fake.cpu(), epoch*len(self.train_loader) + n, sample_rate=16000)
                                                                               
                             fig, axs = plt.subplots(1, 1)
-                            im = axs.imshow(librosa.power_to_db(samples.detach()[0]), origin='lower', aspect='auto')
-                            self.writer.add_figure('Fake_mel_spec/'+str(i), fig, epoch)
+                            gen_melspec_log_norm = samples.detach()[0]
+                            gen_melspec_log = (gen_melspec_log_norm + 0.8) * (self.maxi / (2 * 0.8))
+                            gen_melspec = torch.exp(gen_melspec_log) - 1
+                            
+                            im = axs.imshow(librosa.power_to_db(gen_melspec.cpu()), origin='lower', aspect='auto')
+                            self.writer.add_figure('Fake_mel_spec/'+str(i), fig, epoch*len(self.train_loader) + n)
                             
                         else:
                             break
                             
-                # save wheckpoint
-                if n == self.save_ckpt:
-                    # Save checkpoint if the model (to prevent training problem)
+                # save checkpoint
+                if n % self.save_ckpt == 0:
                     checkpoint = {
                         "epoch": epoch + 1,
                         "generator": self.generator.state_dict(),
