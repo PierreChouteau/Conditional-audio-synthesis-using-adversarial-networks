@@ -85,7 +85,7 @@ config_path = "runs/" + model_config.gan_config.model_name
 config_name = (
     config_path + "/" + model_config.gan_config.model_name + "_train_config.yaml"
 )
-print(f"Saving train_config file: {model_config.gan_config.model_name + "_train_config.yaml"}")
+print(f"Saving train_config file: {model_config.gan_config.model_name + '_train_config.yaml'}")
 config.save_config(model_config, config_name)
 
 
