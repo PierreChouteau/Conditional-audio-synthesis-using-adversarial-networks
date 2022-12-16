@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from .generator import Generator
+from models.generator import Generator
 
 from torch.nn.init import calculate_gain, kaiming_normal_
 
@@ -79,6 +79,7 @@ class Discriminator(nn.Module):
         self.scale_factor = scale_factor
         self.ksize_down = ksize_down
         self.stride_down = stride_down
+        self.out_classif = 11
 
         self.model = nn.Sequential(
             nn.Conv2d(
@@ -161,19 +162,39 @@ class Discriminator(nn.Module):
                 ksize_down=self.ksize_down,
                 bias=False,
             ),
-            
+        )
+        
+        self.classifier = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(self.k_filters * (2**3) * 2 * 16, self.out_channels),
+            nn.Linear(self.k_filters * (2**3) * 2 * 16, self.out_classif, bias=False),
+        )
+        
+        self.disc_out = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(self.k_filters * (2**3) * 2 * 16, self.out_channels, bias=False),
         )
 
     def initialize_weights(self):
         for m in self.model.modules():
             if isinstance(m, (nn.Conv2d)):
                 kaiming_normal_(m.weight, a=calculate_gain("conv2d"))
+                
+        for m in self.classifier.modules():
+            if isinstance(m, (nn.Linear)):
+                kaiming_normal_(m.weight, a=calculate_gain("linear"))
+                
+        for m in self.disc_out.modules():
+            if isinstance(m, (nn.Linear)):
+                kaiming_normal_(m.weight, a=calculate_gain("linear"))
 
     def forward(self, x):
         output = self.model(x)
-        return output
+        classif = self.classifier(output)
+        disc_out = self.disc_out(output)
+        
+        classif = classif.view(classif.size(0), -1)
+        disc_out = disc_out.view(disc_out.size(0), -1)
+        return disc_out, classif
 
 
 #######################################################################################
@@ -182,17 +203,20 @@ class Discriminator(nn.Module):
 def test_disc(TEST=False):
     if TEST:
         noise = torch.randn(8, 256)
+        labels = torch.tensor([1, 1, 1, 1, 1, 1, 1, 1])
 
         gen = Generator()
         gen.initialize_weights()
 
         disc = Discriminator()
         disc.initialize_weights()
-
-        fake = gen(noise)
+        print("init ok")
+        
+        fake = gen(noise, labels)
         print(fake[0:2])
-        result = disc(fake)
-        print(fake.size(), result.size())
+        result, pitch = disc(fake)
+        print(fake.size(), pitch.size(), result.size())
         print(result)
+        print(pitch)
 
 test_disc(False)

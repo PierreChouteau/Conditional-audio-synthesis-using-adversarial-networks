@@ -88,7 +88,7 @@ class Generator(nn.Module):
 
         self.model = nn.Sequential(
             nn.Conv2d(
-                self.k_filters * (2**3),
+                self.k_filters * (2**3) + 11,
                 self.k_filters * (2**3),
                 kernel_size=(2, 16),
                 padding=(1, 15),
@@ -183,7 +183,9 @@ class Generator(nn.Module):
             if isinstance(m, (nn.Conv2d)):
                 kaiming_normal_(m.weight, a=calculate_gain("conv2d"))
 
-    def forward(self, x):
+    def forward(self, x, labels):
+        c = F.one_hot(labels, num_classes=11)
+        x = torch.cat([x,c], 1)
         x = x.view(-1, x.size(-1), 1, 1)
         output = self.model(x)
         return output
@@ -195,9 +197,11 @@ class Generator(nn.Module):
 def test_gen(TEST=False):
     if TEST:
         noise = torch.randn(8, 256)
+        labels = torch.tensor([0, 1, 2, 3, 4, 5, 6, 7])
+        
         gen = Generator()
 
-        image_test = gen(noise)
+        image_test = gen(noise, labels)
         print(noise.size(), image_test.size())
 
 test_gen(False)

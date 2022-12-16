@@ -112,7 +112,7 @@ class NSynthDataset(Dataset):
 
         label = self.labels[self.filenames[idx][:-4]]
 
-        return melspec_log_norm, label["instrument_source"], melspec_log
+        return melspec_log_norm, label["instrument_family"], melspec_log
 
 
 # -----------------------Reconstruction par Griffin-Lim

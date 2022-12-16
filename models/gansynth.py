@@ -74,7 +74,7 @@ class GANSynth(nn.Module):
         interpolated_images = (real * alpha + fake * (1 - alpha)).requires_grad_(True)
 
         # Calculate critic scores
-        mixed_scores = self.critic(interpolated_images)
+        mixed_scores, _ = self.critic(interpolated_images)
         grad_outputs = torch.ones_like(mixed_scores, device=device, requires_grad=False)
 
         # Take the gradient of the scores with respect to the images
@@ -94,10 +94,12 @@ class GANSynth(nn.Module):
     def train_step(self):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         optimizer_critic, optimizer_generator, start_epoch = self.load_checkpoint()
+        # classif_criterion = nn.NLLLoss()
+        classif_criterion = nn.CrossEntropyLoss()
         print("Optimizers, ok")
 
         for epoch in range(start_epoch, start_epoch + self.num_epochs):
-            for n, (real_samples, _, _) in enumerate(self.train_loader):
+            for n, (real_samples, labels, _) in enumerate(self.train_loader):
                 ##############################
                 ## update the discriminator
                 ##############################
@@ -109,17 +111,18 @@ class GANSynth(nn.Module):
                     real_samples.size(2),
                 )
                 real_samples = real_samples.to(device)
+                labels = labels.to(device)
 
                 for _ in range(self.critic_iteration):
 
                     noise = torch.randn(batch_size, self.latent_dim).to(device)
-                    fake_samples = self.generator(noise)
+                    fake_samples = self.generator(noise, labels)
 
                     # zero the parameter gradients
                     optimizer_critic.zero_grad()
 
-                    critic_real = self.critic(real_samples)
-                    critic_fake = self.critic(fake_samples.detach())
+                    critic_real, pitch_real = self.critic(real_samples)
+                    critic_fake, pitch_fake = self.critic(fake_samples.detach())
 
                     gp = self.gradient_penalty(
                         real_samples, fake_samples, device=device
@@ -129,8 +132,11 @@ class GANSynth(nn.Module):
                         + self.lambda_gp * gp
                     )
 
+                    loss_pitch_critic = (1/2) * (classif_criterion(pitch_real, labels) + classif_criterion(pitch_fake, labels))
+                    full_loss_critic = loss_critic + loss_pitch_critic
+                    
                     # calculate the loss for the discriminator/critic
-                    loss_critic.backward(retain_graph=True)
+                    full_loss_critic.backward(retain_graph=True)
                     # update the discriminator/critic
                     optimizer_critic.step()
 
@@ -141,13 +147,16 @@ class GANSynth(nn.Module):
                 optimizer_generator.zero_grad()
 
                 # forward du discriminator
-                disc_fake_output = self.critic(fake_samples)
+                disc_fake_output, pitch_gen = self.critic(fake_samples)
 
                 # calculate the loss for the generator
                 loss_generator = -torch.mean(disc_fake_output)
+                loss_pitch_gen = classif_criterion(pitch_gen, labels)
 
+                full_gen_loss = loss_generator + loss_pitch_gen
+                
                 # calculate the gradient for the discriminator
-                loss_generator.backward()
+                full_gen_loss.backward()
 
                 # update the generator
                 optimizer_generator.step()
@@ -155,19 +164,40 @@ class GANSynth(nn.Module):
                 # add loss in tensorboard
                 if n % self.add_loss == 0:
                     print(
-                        f"Num_batch: {epoch*len(self.train_loader) + n} Loss D.: {loss_critic}"
+                        f"Num_batch: {epoch*len(self.train_loader) + n} Loss D.: {full_loss_critic}"
                     )
                     print(
-                        f"Num_batch: {epoch*len(self.train_loader) + n} Loss G.: {loss_generator}"
+                        f"Num_batch: {epoch*len(self.train_loader) + n} Loss G.: {full_gen_loss}"
                     )
 
                     self.writer.add_scalar(
-                        "Loss/Discriminator_train",
-                        loss_critic,
+                        "Loss/Discriminator_train_full",
+                        full_loss_critic,
                         epoch * len(self.train_loader) * batch_size + n * batch_size,
                     )
                     self.writer.add_scalar(
-                        "Loss/Generator_train",
+                        "Loss/Discriminator_train_pitch",
+                        loss_pitch_critic,
+                        epoch * len(self.train_loader) * batch_size + n * batch_size,
+                    )
+                    self.writer.add_scalar(
+                        "Loss/Discriminator_train_critic",
+                        loss_critic,
+                        epoch * len(self.train_loader) * batch_size + n * batch_size,
+                    )
+                    
+                    self.writer.add_scalar(
+                        "Loss/Generator_train_full",
+                        full_gen_loss,
+                        epoch * len(self.train_loader) * batch_size + n * batch_size,
+                    )
+                    self.writer.add_scalar(
+                        "Loss/Generator_train_pitch",
+                        loss_pitch_gen,
+                        epoch * len(self.train_loader) * batch_size + n * batch_size,
+                    )
+                    self.writer.add_scalar(
+                        "Loss/Generator_train_gen",
                         loss_generator,
                         epoch * len(self.train_loader) * batch_size + n * batch_size,
                     )
@@ -178,7 +208,7 @@ class GANSynth(nn.Module):
                     latent_space_samples = torch.randn(batch_size, self.latent_dim).to(
                         device
                     )
-                    generated_samples = self.generator(latent_space_samples)
+                    generated_samples = self.generator(latent_space_samples, labels)
 
                     for i, samples in enumerate(real_samples):
                         if i < 3:

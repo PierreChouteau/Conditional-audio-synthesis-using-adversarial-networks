@@ -1,8 +1,7 @@
 # Conditional audio synthesis using adversarial networks
 
 In this project, we adapt the GANSynth model to work with a drums dataset. 
-We also propose a variant to condition the training in order to obtain a model capable of generating audio based
-on the desired genre.
+We also propose a variant to condition the training in order to obtain a model capable of generating audio based on the desired genre.
 
 
 ## Install
@@ -34,6 +33,16 @@ cd Conditional-audio-synthesis-using-adversarial-networks
 pip install -r requirements.txt
 ``` 
 
+
+## Training
+
+To start a default training (with the default configuration), simply run the script train.py: 
+
+``` 
+python train.py
+``` 
+
+If you want to modify the configuration (model_name, optimizers, etc...), you will have to change the config file (```default_config.yaml``` ), with the parameters you want. 
 
 
 ## Project Structure

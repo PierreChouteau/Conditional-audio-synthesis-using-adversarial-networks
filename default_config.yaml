@@ -20,9 +20,9 @@ discriminator_config:
 
 gan_config: 
   latent_dim: 256
-  lr_g: 8e-4
-  lr_d: 8e-4
-  model_name: 'gansynth_test_4'
+  lr_g: 2e-4
+  lr_d: 4e-4
+  model_name: 'gansynth_test_cond_5'
   num_epochs: 100
   add_loss: 200
   add_figure: 200
