@@ -1,17 +1,59 @@
-# Conditional-audio-synthesis-using-adversarial-networks
+# Conditional audio synthesis using adversarial networks
 
-## Abstract
+In this project, we adapt the GANSynth model to work with a drums dataset. 
+We also propose a variant to condition the training in order to obtain a model capable of generating audio based
+on the desired genre.
 
-In recent years, Generative Adversarial Networks (GANs) have yielded impressive results on various
-generative tasks. In particular, conditional GANs have gained increasing interest in user-guided generation, yet tend to suffer from mode collapse, resulting in low sample diversity. In this project, we will study how GANs can be used for class-conditional audio synthesis, and how to increase the diversity of the generated sounds. Specifically, the ultimate goal is to obtain a model capable of generating audio based on the desired genre. To do so, we will need to find a proper classification for "genres" and think about how to accurately condition our model. Hence, this project tackles several challenges: the training of a model on a variety of dataset and the conditioning of this model in order to produce a diversity of audio within a genre.
+
+## Install
+
+To run our scripts, you will need to have a specific environment which will require the installation of miniconda (or anaconda). 
+If you do not already have it, you can install it from the original [website](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html).
 
 
-## References 
+- Clone the github repository
 
-[1] Jesse H. Engel et al. “GANSynth: Adversarial Neural Audio Synthesis”. In: CoRR abs/1902.08710 (2019). arXiv: 1902.08710. url: http://arxiv.org/abs/1902.08710.  
-[2] Ian Goodfellow et al. “Generative adversarial nets”. In: Advances in neural information processing systems. 2014, pp. 2672–2680.  
-[3] D. Griffin and Jae Lim. “Signal estimation from modified short-time Fourier transform”. In: IEEE Transactions on Acoustics, Speech, and Signal Processing 32.2 (1984), pp. 236–243. doi: 10.1109/TASSP.1984.1164317.  
-[4] Diederik P Kingma and Max Welling. Auto-Encoding Variational Bayes. 2013. doi: 10.48550/ARXIV.1312.6114. url: https://arxiv.org/abs/1312.6114.  
-[5] Qi Mao et al. “Mode Seeking Generative Adversarial Networks for Diverse Image Synthesis”. In: CoRR abs/1903.05628 (2019). arXiv: 1903.05628. url: http://arxiv.org/abs/1903.05628.  
-[6] Mehdi Mirza and Simon Osindero. “Conditional Generative Adversarial Nets”. In: CoRR abs/1411.1784 (2014). arXiv: 1411 . 1784. url: http://arxiv.org/abs/1411.1784.  
-[7] Alec Radford, Luke Metz, and Soumith Chintala. Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks. 2015. doi: 10.48550/ARXIV.1511.06434. url: https://arxiv.org/abs/1511.06434.  
+``` 
+git clone https://github.com/PierreChouteau/Conditional-audio-synthesis-using-adversarial-networks
+``` 
+
+- Create a virtual env with python 3.10.8:
+
+``` 
+conda create -n gansynth python=3.10.8
+``` 
+
+- Activate the environment:
+``` 
+conda activate gansynth
+``` 
+
+- Go into the repository and install the dependencies: 
+``` 
+cd Conditional-audio-synthesis-using-adversarial-networks
+pip install -r requirements.txt
+``` 
+
+
+
+## Project Structure
+
+```bash 
+Conditional-audio-synthesis-using-adversarial-networks
+├── configs    
+│   └── __init__.py
+│   └── config.py
+├── datasets   
+│   └── __init__.py
+│   └── dataset.py
+│   └── helper.py
+├── models
+│   └── __init__.py
+│   └── discriminator.py
+│   └── gansynth.py
+│   └── generator.py
+├── .gitignore
+├── README.md
+├── default_config.yaml
+├── requirements.txt
+└── train.py
