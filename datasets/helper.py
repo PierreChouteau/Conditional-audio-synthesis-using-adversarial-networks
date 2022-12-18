@@ -1,5 +1,6 @@
 import torch
 import librosa
+import librosa.display
 import matplotlib.pyplot as plt
 import pandas as pd
 from IPython.display import Audio, display
@@ -68,12 +69,14 @@ def plot_specgram(waveform, sample_rate, title="Spectrogram", xlim=None):
 def plot_spectrogram(spec, title=None, ylabel='freq_bin', aspect='auto', xmax=None):
   fig, axs = plt.subplots(1, 1)
   axs.set_title(title or 'Spectrogram (db)')
-  axs.set_ylabel(ylabel)
-  axs.set_xlabel('frame')
-  im = axs.imshow(librosa.power_to_db(spec), origin='lower', aspect=aspect)
+  #axs.set_ylabel(ylabel)
+  #axs.set_xlabel('frame')
+  #im = axs.imshow(librosa.power_to_db(spec), origin='lower', aspect=aspect)
+  im = librosa.display.specshow(librosa.power_to_db(spec), x_axis='time', y_axis='linear', ax=axs)
+  fig.colorbar(im, ax=axs, format="%+2.f dB")
   if xmax:
     axs.set_xlim((0, xmax))
-  fig.colorbar(im, ax=axs)
+  #fig.colorbar(im, ax=axs)
   plt.show(block=False)
 
 #-----Play audio....
