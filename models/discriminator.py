@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from .generator import Generator
+from models.generator import Generator
 
 from torch.nn.init import calculate_gain, kaiming_normal_
 
@@ -12,6 +12,29 @@ class Reshape(torch.nn.Module):
 
     def forward(self, x):
         return x.view(x.size(0), *self.outer_shape)
+
+
+class MiniBatchStdLayer(nn.Module):
+    def __init__(
+        self,
+        offset=1e-8  # From the original implementation
+        # https://github.com/tkarras/progressive_growing_of_gans/blob/master/networks.py #L135
+    ):
+        super(MiniBatchStdLayer, self).__init__()
+        self.offset_ = offset
+
+    def forward(self, x):
+        stddev = torch.sqrt(
+            torch.mean(
+                (x - torch.mean(x, dim=0, keepdim=True)) ** 2, dim=0, keepdim=True
+            )
+            + self.offset_
+        )
+        inject_shape = list(x.size())[:]
+        inject_shape[1] = 1
+        inject = torch.mean(stddev, dim=1, keepdim=True)
+        inject = inject.expand(inject_shape)
+        return torch.cat((x, inject), dim=1)
 
 
 class DownsampleLayer(nn.Module):
@@ -88,7 +111,6 @@ class Discriminator(nn.Module):
                 padding="valid",
                 bias=False,
             ),
-            
             nn.Conv2d(
                 self.k_filters,
                 self.k_filters,
@@ -97,7 +119,6 @@ class Discriminator(nn.Module):
                 bias=False,
             ),
             nn.LeakyReLU(0.2),
-            
             nn.Conv2d(
                 self.k_filters,
                 self.k_filters,
@@ -106,7 +127,6 @@ class Discriminator(nn.Module):
                 bias=False,
             ),
             nn.LeakyReLU(0.2),
-            
             DownsampleLayer(
                 self.k_filters,
                 self.k_filters * 2,
@@ -152,16 +172,38 @@ class Discriminator(nn.Module):
                 ksize_down=self.ksize_down,
                 bias=False,
             ),
-            DownsampleLayer(
+            # DownsampleLayer(
+            #     self.k_filters * (2**3),
+            #     self.k_filters * (2**3),
+            #     self.k_width,
+            #     self.k_height,
+            #     padding=padding,
+            #     ksize_down=self.ksize_down,
+            #     bias=False,
+            # ),
+            nn.AvgPool2d(
+                kernel_size=self.ksize_down,
+                stride=stride_down,
+                ceil_mode=False,
+                count_include_pad=False,
+            ),
+            MiniBatchStdLayer(),
+            nn.Conv2d(
+                self.k_filters * (2**3) + 1,
                 self.k_filters * (2**3),
-                self.k_filters * (2**3),
-                self.k_width,
-                self.k_height,
+                kernel_size=(self.k_width, self.k_height),
                 padding=padding,
-                ksize_down=self.ksize_down,
                 bias=False,
             ),
-            
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(
+                self.k_filters * (2**3),
+                self.k_filters * (2**3),
+                kernel_size=(self.k_width, self.k_height),
+                padding=padding,
+                bias=False,
+            ),
+            nn.LeakyReLU(0.2),
             nn.Flatten(),
             nn.Linear(self.k_filters * (2**3) * 2 * 16, self.out_channels),
         )
@@ -170,6 +212,8 @@ class Discriminator(nn.Module):
         for m in self.model.modules():
             if isinstance(m, (nn.Conv2d)):
                 kaiming_normal_(m.weight, a=calculate_gain("conv2d"))
+            if isinstance(m, (nn.Linear)):
+                kaiming_normal_(m.weight, a=calculate_gain("linear"))
 
     def forward(self, x):
         output = self.model(x)
@@ -195,4 +239,5 @@ def test_disc(TEST=False):
         print(fake.size(), result.size())
         print(result)
 
-test_disc(False)
+
+# test_disc(False)

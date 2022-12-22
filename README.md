@@ -34,6 +34,15 @@ cd Conditional-audio-synthesis-using-adversarial-networks
 pip install -r requirements.txt
 ``` 
 
+## Training
+
+To start a default training (with the default configuration), simply run the script train.py: 
+
+``` 
+python train.py
+``` 
+
+If you want to modify the configuration (model_name, optimizers, etc...), you will have to change the config file (```default_config.yaml``` ), with the parameters you want. 
 
 
 ## Project Structure
@@ -43,6 +52,7 @@ Conditional-audio-synthesis-using-adversarial-networks
 ├── configs    
 │   └── __init__.py
 │   └── config.py
+├── data   
 ├── datasets   
 │   └── __init__.py
 │   └── dataset.py
@@ -52,8 +62,11 @@ Conditional-audio-synthesis-using-adversarial-networks
 │   └── discriminator.py
 │   └── gansynth.py
 │   └── generator.py
+├── notebooks
+├── runs
+├── trained_model
 ├── .gitignore
-├── README.md
 ├── default_config.yaml
+├── README.md
 ├── requirements.txt
 └── train.py

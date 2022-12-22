@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from torch.nn.init import calculate_gain, kaiming_normal_
+import time
+import datasets
 
 
 class Reshape(torch.nn.Module):
@@ -48,7 +50,6 @@ class UpsampleLayer(nn.Module):
             ),
             nn.LeakyReLU(0.2),
             PixelNormalization(),
-            
             nn.Conv2d(
                 k_filters,
                 k_filters,
@@ -96,7 +97,6 @@ class Generator(nn.Module):
             ),
             nn.LeakyReLU(0.2),
             PixelNormalization(),
-            
             nn.Conv2d(
                 self.k_filters * (2**3),
                 self.k_filters * (2**3),
@@ -106,7 +106,6 @@ class Generator(nn.Module):
             ),
             nn.LeakyReLU(0.2),
             PixelNormalization(),
-            
             UpsampleLayer(
                 self.k_filters * (2**3),
                 self.k_filters * (2**3),
@@ -167,7 +166,6 @@ class Generator(nn.Module):
                 upsample_mode=self.upsample_mode,
                 bias=False,
             ),
-            
             nn.Conv2d(
                 self.k_filters,
                 self.out_channels,
@@ -194,10 +192,25 @@ class Generator(nn.Module):
 ###########################################################
 def test_gen(TEST=False):
     if TEST:
-        noise = torch.randn(8, 256)
-        gen = Generator()
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+        noise = torch.randn(1, 256).to(device)
+        gen = Generator().to(device)
+
+        start = time.time()
         image_test = gen(noise)
+        stop1 = time.time()
+        image_test = image_test.view(
+            image_test.size(0),
+            image_test.size(1),
+            image_test.size(3),
+            image_test.size(2),
+        )
+        audio_real = datasets.dataset.mel_to_waveform(image_test.detach(), 12.6, device)
+        stop2 = time.time()
         print(noise.size(), image_test.size())
+        print(stop1 - start)
+        print(stop2 - start)
 
-test_gen(False)
+
+# test_gen(True)

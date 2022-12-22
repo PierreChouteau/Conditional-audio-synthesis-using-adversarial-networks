@@ -164,12 +164,12 @@ class GANSynth(nn.Module):
                     self.writer.add_scalar(
                         "Loss/Discriminator_train",
                         loss_critic,
-                        epoch * len(self.train_loader) * batch_size + n * batch_size,
+                        epoch * len(self.train_loader) + n,
                     )
                     self.writer.add_scalar(
                         "Loss/Generator_train",
                         loss_generator,
-                        epoch * len(self.train_loader) * batch_size + n * batch_size,
+                        epoch * len(self.train_loader) + n,
                     )
                     self.writer.flush()
 
@@ -256,6 +256,7 @@ class GANSynth(nn.Module):
                 if n % self.save_ckpt == 0:
                     checkpoint = {
                         "epoch": epoch + 1,
+                        "n_batch": n,
                         "generator": self.generator.state_dict(),
                         "discriminator": self.critic.state_dict(),
                         "optimizer_gen": optimizer_generator.state_dict(),

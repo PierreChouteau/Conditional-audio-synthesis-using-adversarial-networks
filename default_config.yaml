@@ -20,18 +20,20 @@ discriminator_config:
 
 gan_config: 
   latent_dim: 256
-  lr_g: 8e-4
-  lr_d: 8e-4
-  model_name: 'gansynth_test_4'
+  lr_g: 2e-4
+  lr_d: 4e-4
+  model_name: 'gansynth_test_drums_ml_22_test2_with_mini_batch_std_final_testtesttes'
   num_epochs: 100
-  add_loss: 200
-  add_figure: 200
-  save_ckpt: 200
+  add_loss: 400
+  add_figure: 400
+  save_ckpt: 400
   critic_iteration: 1
   lambda_gp: 1
 
 
 dataset:
   batch_size: 6
-  root_dir: "/fast-1/atiam22-23/nsynth/"
-  maxi: 12.347074 # valeur par défaut pour nsynth (avec que les samples acoustiques)
+  resample_rate: 16000
+  signal_duration: 4
+  root_dir: "/fast-1/datasets/drums_ml/drums_ml_22"
+  maxi: 12.6411705 # valeur par défaut pour nsynth (avec que les samples acoustiques) - 12.347074
