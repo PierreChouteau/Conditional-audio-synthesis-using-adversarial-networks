@@ -28,7 +28,11 @@ model_config = config.load_config(config_filepath)
 ###############################################
 if model_config.dataset.maxi == 1:
     nsynth_dataset = data.NSynthDataset(
-        root_dir=model_config.dataset.root_dir, filter_key="acoustic", usage="train"
+        root_dir=model_config.dataset.root_dir,
+        usage="train",
+        filter_key="acoustic",
+        resample_rate=model_config.dataset.resample_rate,
+        signal_duration=model_config.dataset.signal_duration,
     )
     print("Dataset loaded without normalisation")
 
@@ -40,20 +44,20 @@ if model_config.dataset.maxi == 1:
         max1 = np.amax(abso[0])
         maxi = max(maxi, max1)
 
-    model_config.dataset.maxi = maxi
+    model_config.dataset.maxi = float(maxi)
 
 print("Max value of the Melspec is " + str(model_config.dataset.maxi))
-
-maxi = model_config.dataset.maxi
 nsynth_dataset = data.NSynthDataset(
     root_dir=model_config.dataset.root_dir,
-    filter_key="acoustic",
     usage="train",
-    maxi=maxi,
+    filter_key="acoustic",
+    resample_rate=model_config.dataset.resample_rate,
+    signal_duration=model_config.dataset.signal_duration,
+    maxi=model_config.dataset.maxi,
 )
-
-
 print("Normalised dataset loaded")
+
+
 train_loader = DataLoader(
     nsynth_dataset,
     batch_size=model_config.dataset.batch_size,
@@ -62,11 +66,6 @@ train_loader = DataLoader(
     drop_last=True,
 )
 print("Dataloader is ready to go...")
-
-# Add les figures, loss, checkpoint tout les 200 batchs
-model_config.gan_config.add_figure = 200
-model_config.gan_config.add_loss = 200
-model_config.gan_config.save_ckpt = 200
 
 
 ###############################################
@@ -85,7 +84,9 @@ config_path = "runs/" + model_config.gan_config.model_name
 config_name = (
     config_path + "/" + model_config.gan_config.model_name + "_train_config.yaml"
 )
-print(f"Saving train_config file: {model_config.gan_config.model_name + '_train_config.yaml'}")
+print(
+    f"Saving train_config file: {model_config.gan_config.model_name + '_train_config.yaml'}"
+)
 config.save_config(model_config, config_name)
 
 
@@ -103,7 +104,7 @@ gansynth = GANSynth(
     generator,
     discriminator,
     writer,
-    maxi=maxi,
+    maxi=model_config.dataset.maxi,
     **model_config.gan_config.dict(),
 )
 

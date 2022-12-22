@@ -1,5 +1,6 @@
 import torch
 import librosa
+import librosa.display
 import matplotlib.pyplot as plt
 import pandas as pd
 from IPython.display import Audio, display

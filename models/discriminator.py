@@ -79,7 +79,7 @@ class Discriminator(nn.Module):
         self.scale_factor = scale_factor
         self.ksize_down = ksize_down
         self.stride_down = stride_down
-        self.out_classif = 11
+        self.out_classif = 128
 
         self.model = nn.Sequential(
             nn.Conv2d(
@@ -89,7 +89,6 @@ class Discriminator(nn.Module):
                 padding="valid",
                 bias=False,
             ),
-            
             nn.Conv2d(
                 self.k_filters,
                 self.k_filters,
@@ -98,7 +97,6 @@ class Discriminator(nn.Module):
                 bias=False,
             ),
             nn.LeakyReLU(0.2),
-            
             nn.Conv2d(
                 self.k_filters,
                 self.k_filters,
@@ -107,7 +105,6 @@ class Discriminator(nn.Module):
                 bias=False,
             ),
             nn.LeakyReLU(0.2),
-            
             DownsampleLayer(
                 self.k_filters,
                 self.k_filters * 2,
@@ -163,26 +160,28 @@ class Discriminator(nn.Module):
                 bias=False,
             ),
         )
-        
+
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(self.k_filters * (2**3) * 2 * 16, self.out_classif, bias=False),
         )
-        
+
         self.disc_out = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(self.k_filters * (2**3) * 2 * 16, self.out_channels, bias=False),
+            nn.Linear(
+                self.k_filters * (2**3) * 2 * 16, self.out_channels, bias=False
+            ),
         )
 
     def initialize_weights(self):
         for m in self.model.modules():
             if isinstance(m, (nn.Conv2d)):
                 kaiming_normal_(m.weight, a=calculate_gain("conv2d"))
-                
+
         for m in self.classifier.modules():
             if isinstance(m, (nn.Linear)):
                 kaiming_normal_(m.weight, a=calculate_gain("linear"))
-                
+
         for m in self.disc_out.modules():
             if isinstance(m, (nn.Linear)):
                 kaiming_normal_(m.weight, a=calculate_gain("linear"))
@@ -191,7 +190,7 @@ class Discriminator(nn.Module):
         output = self.model(x)
         classif = self.classifier(output)
         disc_out = self.disc_out(output)
-        
+
         classif = classif.view(classif.size(0), -1)
         disc_out = disc_out.view(disc_out.size(0), -1)
         return disc_out, classif
@@ -211,7 +210,7 @@ def test_disc(TEST=False):
         disc = Discriminator()
         disc.initialize_weights()
         print("init ok")
-        
+
         fake = gen(noise, labels)
         print(fake[0:2])
         result, pitch = disc(fake)
@@ -219,4 +218,5 @@ def test_disc(TEST=False):
         print(result)
         print(pitch)
 
-test_disc(False)
+
+# test_disc(False)

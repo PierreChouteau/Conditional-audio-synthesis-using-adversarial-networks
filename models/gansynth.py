@@ -132,9 +132,12 @@ class GANSynth(nn.Module):
                         + self.lambda_gp * gp
                     )
 
-                    loss_pitch_critic = (1/2) * (classif_criterion(pitch_real, labels) + classif_criterion(pitch_fake, labels))
+                    loss_pitch_critic = (1 / 2) * (
+                        classif_criterion(pitch_real, labels)
+                        + classif_criterion(pitch_fake, labels)
+                    )
                     full_loss_critic = loss_critic + loss_pitch_critic
-                    
+
                     # calculate the loss for the discriminator/critic
                     full_loss_critic.backward(retain_graph=True)
                     # update the discriminator/critic
@@ -154,7 +157,7 @@ class GANSynth(nn.Module):
                 loss_pitch_gen = classif_criterion(pitch_gen, labels)
 
                 full_gen_loss = loss_generator + loss_pitch_gen
-                
+
                 # calculate the gradient for the discriminator
                 full_gen_loss.backward()
 
@@ -173,33 +176,33 @@ class GANSynth(nn.Module):
                     self.writer.add_scalar(
                         "Loss/Discriminator_train_full",
                         full_loss_critic,
-                        epoch * len(self.train_loader) * batch_size + n * batch_size,
+                        epoch * len(self.train_loader) + n,
                     )
                     self.writer.add_scalar(
                         "Loss/Discriminator_train_pitch",
                         loss_pitch_critic,
-                        epoch * len(self.train_loader) * batch_size + n * batch_size,
+                        epoch * len(self.train_loader) + n,
                     )
                     self.writer.add_scalar(
                         "Loss/Discriminator_train_critic",
                         loss_critic,
-                        epoch * len(self.train_loader) * batch_size + n * batch_size,
+                        epoch * len(self.train_loader) + n,
                     )
-                    
+
                     self.writer.add_scalar(
                         "Loss/Generator_train_full",
                         full_gen_loss,
-                        epoch * len(self.train_loader) * batch_size + n * batch_size,
+                        epoch * len(self.train_loader) + n,
                     )
                     self.writer.add_scalar(
                         "Loss/Generator_train_pitch",
                         loss_pitch_gen,
-                        epoch * len(self.train_loader) * batch_size + n * batch_size,
+                        epoch * len(self.train_loader) + n,
                     )
                     self.writer.add_scalar(
                         "Loss/Generator_train_gen",
                         loss_generator,
-                        epoch * len(self.train_loader) * batch_size + n * batch_size,
+                        epoch * len(self.train_loader) + n,
                     )
                     self.writer.flush()
 
@@ -286,6 +289,7 @@ class GANSynth(nn.Module):
                 if n % self.save_ckpt == 0:
                     checkpoint = {
                         "epoch": epoch + 1,
+                        "n_batch": n,
                         "generator": self.generator.state_dict(),
                         "discriminator": self.critic.state_dict(),
                         "optimizer_gen": optimizer_generator.state_dict(),

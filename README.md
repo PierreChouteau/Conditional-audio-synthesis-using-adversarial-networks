@@ -52,6 +52,7 @@ Conditional-audio-synthesis-using-adversarial-networks
 ├── configs    
 │   └── __init__.py
 │   └── config.py
+├── data   
 ├── datasets   
 │   └── __init__.py
 │   └── dataset.py
@@ -61,8 +62,11 @@ Conditional-audio-synthesis-using-adversarial-networks
 │   └── discriminator.py
 │   └── gansynth.py
 │   └── generator.py
+├── notebooks
+├── runs
+├── trained_model
 ├── .gitignore
-├── README.md
 ├── default_config.yaml
+├── README.md
 ├── requirements.txt
 └── train.py

@@ -22,3 +22,4 @@ pexpect==4.8
 matplotlib==3.6.2
 torch-tb-profiler==0.4.0
 IPython==8.7.0
+nvitop==0.11.0

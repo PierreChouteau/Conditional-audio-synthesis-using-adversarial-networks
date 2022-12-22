@@ -38,6 +38,8 @@ class GAN_config(BaseModel):
 
 class Dataset(BaseModel):
     batch_size: int
+    resample_rate: int
+    signal_duration: int
     root_dir: str
     maxi: float
 
