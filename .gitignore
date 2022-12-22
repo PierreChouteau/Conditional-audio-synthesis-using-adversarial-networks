@@ -80,7 +80,7 @@ target/
 # Data 
 data/
 runs/
-trained_models/
+trained_model/
 
 
 # IPython
