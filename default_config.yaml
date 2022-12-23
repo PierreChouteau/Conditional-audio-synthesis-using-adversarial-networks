@@ -36,4 +36,4 @@ dataset:
   resample_rate: 16000
   signal_duration: 4
   root_dir: "/fast-1/datasets/drums_ml/drums_ml_22"
-  maxi: 12.6411705 # valeur par défaut pour nsynth (avec que les samples acoustiques) - 12.347074
+  maxi: 12.6411705 # default value for nsynth (with only acoustic samples) - 12.347074
