@@ -156,11 +156,11 @@ class CustomDataset(Dataset):
         waveform = waveform
 
         # -----------------------Conversion de Sr
-        # Todo: Faire un script à part qui fait un resampling complet du dataset.
+        # Todo: Make a separate script that does a complete resampling of the dataset.
         resampled_waveform = self.__resampling__(waveform, sample_rate, resample_rate)
 
         # -----------------------Decoupe du signal resample a la bonne duree
-        # Todo: Faire un script à part qui permet d'obtenir une size unique d'audio pour tout le dataset.
+        # Todo: Make a separate script that allows to get a unique size of audio for the whole dataset.
         dur1 = len(resampled_waveform[0])
         durVoulue = int(temps_sig * resample_rate)
         if durVoulue <= dur1:
@@ -171,7 +171,7 @@ class CustomDataset(Dataset):
             )
 
         # ----------------------Spectro de Mel
-        # relation provenant du code officiel de GANSynth
+        # relation from the official GANSynth code
         time_steps, n_mels = 128, 1024
         frame_length = n_mels * 2
         hop_length = int((1.0 - 0.75) * frame_length)

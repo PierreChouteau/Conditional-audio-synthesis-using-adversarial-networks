@@ -13,19 +13,19 @@ from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 
 
-# Définit le device sur lequel on va train
+# Defines the device on which we will train
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-# Permet de load toute la configuration de notre gan
+# Load all the configuration of our gan
 config_filepath = "./default_config.yaml"
 
 print(f"Loading config file: {config_filepath}")
 model_config = config.load_config(config_filepath)
 
 
-###############################################
+#########################################################################################################
 # LOAD DATA
-###############################################
+#########################################################################################################
 if model_config.dataset.maxi == 1:
     custom_dataset = data.CustomDataset(
         root_dir=model_config.dataset.root_dir,
@@ -34,7 +34,7 @@ if model_config.dataset.maxi == 1:
     )
     print("Dataset loaded without normalisation")
 
-    # Test du max du dataset pour entier
+    # Test of the max of the dataset
     print("Research of the max in progress...")
     maxi = 0
     for i, (_, _, melspec_log) in enumerate(custom_dataset):
@@ -64,9 +64,9 @@ train_loader = DataLoader(
 print("Dataloader is ready to go...")
 
 
-###############################################
+#########################################################################################################
 # TB_WRITER: Initialisation + log model config
-###############################################
+#########################################################################################################
 writer = SummaryWriter("runs/" + model_config.gan_config.model_name)
 writer.add_text("Generator parameters", str(model_config.generator_config))
 writer.add_text("Discriminator parameters", str(model_config.discriminator_config))
@@ -74,8 +74,7 @@ writer.add_text("Gan_training parameters", str(model_config.gan_config))
 writer.add_text("dataset", str(model_config.dataset))
 
 
-# Save le config file pour pouvoir le rouvrir par la suite (save dans le dossier de logs runs/model_name)
-# Pour Gansynth il faudra faire une fusion entre le folder 'runs' et trained_model
+# Save the config file to reopen it later (save in the logs folder runs/model_name)
 config_path = "runs/" + model_config.gan_config.model_name
 config_name = (
     config_path + "/" + model_config.gan_config.model_name + "_train_config.yaml"
@@ -86,9 +85,9 @@ print(
 config.save_config(model_config, config_name)
 
 
-###############################################
-# Model Initialisation
-###############################################
+#########################################################################################################
+#Initialization of the model
+#########################################################################################################
 generator = Generator(**model_config.generator_config.dict()).to(device)
 generator.initialize_weights()
 
@@ -105,8 +104,8 @@ gansynth = GANSynth(
 )
 
 
-################################################
+#########################################################################################################
 # Training
-################################################
+#########################################################################################################
 print("Training Started")
 gansynth.train_step()

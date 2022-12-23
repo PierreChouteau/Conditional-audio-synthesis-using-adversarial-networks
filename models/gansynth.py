@@ -99,7 +99,7 @@ class GANSynth(nn.Module):
         for epoch in range(start_epoch, start_epoch + self.num_epochs):
             for n, (real_samples, _, _) in enumerate(self.train_loader):
                 ##############################
-                ## update the discriminator
+                # update the discriminator
                 ##############################
                 batch_size = real_samples.size(0)
                 real_samples = real_samples.view(
@@ -135,7 +135,7 @@ class GANSynth(nn.Module):
                     optimizer_critic.step()
 
                 ##############################
-                ## update the Generator
+                # update the Generator
                 ##############################
                 # zero the parameter gradients
                 optimizer_generator.zero_grad()

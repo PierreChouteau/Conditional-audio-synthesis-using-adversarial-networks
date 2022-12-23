@@ -15,10 +15,11 @@ class Reshape(torch.nn.Module):
 
 
 class MiniBatchStdLayer(nn.Module):
+    # Class MiniBatchStdLayer largely inspired by https://github.com/ss12f32v/GANsynth-pytorch
     def __init__(
         self,
         offset=1e-8  # From the original implementation
-        # https://github.com/tkarras/progressive_growing_of_gans/blob/master/networks.py #L135
+                     # https://github.com/tkarras/progressive_growing_of_gans/blob/master/networks.py #L135
     ):
         super(MiniBatchStdLayer, self).__init__()
         self.offset_ = offset
