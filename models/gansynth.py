@@ -156,7 +156,7 @@ class GANSynth(nn.Module):
                 optimizer_generator.step()
 
                 # add loss in tensorboard
-                if n % self.add_loss == 0 and n != 0:
+                if n % self.add_loss == 0:
                     self.logger.info(
                         f"Num_batch: {epoch*len(self.train_loader) + n} Loss D.: {loss_critic}"
                     )
@@ -177,7 +177,7 @@ class GANSynth(nn.Module):
                     self.writer.flush()
 
                 # add generated pictures in tensorboard
-                if n % self.add_figure == 0 and n != 0:
+                if n % self.add_figure == 0:
                     latent_space_samples = torch.randn(batch_size, self.latent_dim).to(
                         self.device
                     )
@@ -256,7 +256,7 @@ class GANSynth(nn.Module):
                             break
 
                 # save checkpoint
-                if n % self.save_ckpt == 0 and n != 0:
+                if n % self.save_ckpt == 0:
                     checkpoint = {
                         "epoch": epoch + 1,
                         "n_batch": n,

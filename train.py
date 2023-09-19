@@ -48,19 +48,12 @@ def train(cfg: DictConfig):
 
 
     log.info("Max value of the Melspec is " + str(cfg.dataset.maxi))
-    # custom_dataset = data.CustomDataset(
-    #     root_dir=cfg.dataset.root_dir,
-    #     resample_rate=cfg.dataset.resample_rate,
-    #     signal_duration=cfg.dataset.signal_duration,
-    #     maxi=cfg.dataset.maxi,
-    # )
-    custom_dataset = data.NSynthDataset(
+    custom_dataset = data.CustomDataset(
         root_dir=cfg.dataset.root_dir,
-        usage="test",
-        filter_key='acoustic',
         resample_rate=cfg.dataset.resample_rate,
         signal_duration=cfg.dataset.signal_duration,
         maxi=cfg.dataset.maxi,
+        device=device,
     )
     log.info("Normalised dataset loaded")
 

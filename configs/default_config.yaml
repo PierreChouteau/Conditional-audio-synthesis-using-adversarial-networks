@@ -35,8 +35,8 @@ dataset:
   batch_size: 6
   resample_rate: 16000
   signal_duration: 4
-  root_dir: ./data/
-  maxi: 12.347074 # default value for nsynth (with only acoustic samples) - 12.347074 | for drums : 12.6411705
+  root_dir: /data/drums/audio/
+  maxi: 12.6411705 # default value for nsynth (with only acoustic samples) - 12.347074 | for drums : 12.6411705
 
 
 

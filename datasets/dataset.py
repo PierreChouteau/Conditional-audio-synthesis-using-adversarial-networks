@@ -17,6 +17,7 @@ class NSynthDataset(Dataset):
         resample_rate=16000,
         signal_duration=4,
         maxi=1,
+        device=torch.device("cpu"),
     ):
         self.root_dir = root_dir
         train_valid_test = {
@@ -38,6 +39,8 @@ class NSynthDataset(Dataset):
         self.resample_rate = resample_rate
         self.signal_duration = signal_duration
 
+        self.device = device
+        
     def __len__(self):
         return len(self.filenames)
 
@@ -50,14 +53,12 @@ class NSynthDataset(Dataset):
             lowpass_filter_width=128,
             rolloff=0.99,
             resampling_method="kaiser_window",
-        )
+        ).to(self.device)
         resampled_waveform = resampler(waveform)
 
         return resampled_waveform
 
     def __waveform_to_mel__(self, waveform, sample_rate, resample_rate, temps_sig):
-        # -------------------------Ouverture d'un fichier et affichage spectro/waveform
-        waveform = waveform
 
         # -----------------------Conversion de Sr
         resampled_waveform = self.resampling(waveform, sample_rate, resample_rate)
@@ -87,7 +88,7 @@ class NSynthDataset(Dataset):
             center=False,
             power=2.0,
             n_mels=n_mels,
-        )
+        ).to(self.device)
         resampled_waveform = torch.nn.functional.pad(
             resampled_waveform,
             ((num_samples - len(resampled_waveform[0]), 0)),
@@ -104,7 +105,8 @@ class NSynthDataset(Dataset):
     def __getitem__(self, idx):
         audio_path = os.path.join(self.audio_dir, self.filenames[idx])
         waveform, sample_rate = torchaudio.load(audio_path)
-
+        waveform = waveform.to(self.device)
+        
         melspec_log = self.__waveform_to_mel__(
             waveform, sample_rate, self.resample_rate, self.signal_duration
         )
@@ -123,6 +125,7 @@ class CustomDataset(Dataset):
         resample_rate=16000,
         signal_duration=4,
         maxi=1,
+        device=torch.device("cpu"),
     ):
         self.root_dir = root_dir
 
@@ -133,7 +136,8 @@ class CustomDataset(Dataset):
 
         self.resample_rate = resample_rate
         self.signal_duration = signal_duration
-
+        self.device = device
+        
     def __len__(self):
         return len(self.filenames)
 
@@ -146,14 +150,13 @@ class CustomDataset(Dataset):
             lowpass_filter_width=128,
             rolloff=0.99,
             resampling_method="kaiser_window",
-        )
+        ).to(self.device)
+        
         resampled_waveform = resampler(waveform)
 
         return resampled_waveform
 
     def __waveform_to_mel__(self, waveform, sample_rate, resample_rate, temps_sig):
-        # -------------------------Ouverture d'un fichier et affichage spectro/waveform
-        waveform = waveform
 
         # -----------------------Conversion de Sr
         # Todo: Make a separate script that does a complete resampling of the dataset.
@@ -185,7 +188,7 @@ class CustomDataset(Dataset):
             center=False,
             power=2.0,
             n_mels=n_mels,
-        )
+        ).to(self.device)
         resampled_waveform = torch.nn.functional.pad(
             resampled_waveform,
             ((num_samples - len(resampled_waveform[0]), 0)),
@@ -204,6 +207,7 @@ class CustomDataset(Dataset):
 
         try:
             waveform, sample_rate = torchaudio.load(audio_path)
+            waveform = waveform.to(self.device)
             label = "drums"  # Todo: get the labels and incorporate them into the code
 
             melspec_log = self.__waveform_to_mel__(
@@ -229,8 +233,7 @@ def mel_to_waveform(melspec_log_norm, maxi, device=torch.device("cpu")):
     # On repasse en STFT pour Griffin-Lim
     inverse_melscale_transform = T.InverseMelScale(
         n_stft=frame_length // 2 + 1, n_mels=n_mels, sample_rate=16000
-    )
-    inverse_melscale_transform.to(device)
+    ).to(device)
     rev_spec = inverse_melscale_transform(melspec)
 
     # Declaration de Griffin-Lim
@@ -239,8 +242,7 @@ def mel_to_waveform(melspec_log_norm, maxi, device=torch.device("cpu")):
         n_iter=32,
         hop_length=hop_length,
         win_length=frame_length,
-    )
-    griffin_lim.to(device)
+    ).to(device)
     waveform_r = griffin_lim(rev_spec)  # On applique Griffin-Lim
 
     # Normalisation de l'audio de sortie
@@ -267,4 +269,5 @@ def test_data(TEST=False):
                 break
 
 
-# test_data(False)
+if __name__ == "__main__":
+    test_data(False)
