@@ -76,3 +76,13 @@ Conditional-audio-synthesis-using-adversarial-networks
 ├── README.md
 ├── requirements.txt # python dependencies necessary for the project
 └── train.py # script to run the training
+```
+
+## Hydra color
+
+Configuration files are written in YAML and use the [Hydra](https://hydra.cc/) framework.
+If there is a problem with the color of the log in the terminal, you can fix it by installing the following package:
+
+```
+pip install 'git+https://github.com/AlsonYang/hydra/@fix/colorlog_filehandler#egg=hydra-colorlog&subdirectory=plugins/hydra_colorlog'
+```

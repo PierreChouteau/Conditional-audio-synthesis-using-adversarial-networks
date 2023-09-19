@@ -13,6 +13,8 @@ class GANSynth(nn.Module):
         generator,
         discriminator,
         writer,
+        logger,
+        device,
         maxi,
         critic_iteration,
         lambda_gp,
@@ -41,6 +43,8 @@ class GANSynth(nn.Module):
         self.add_figure = add_figure
         self.save_ckpt = save_ckpt
         self.maxi = maxi
+        self.device = device
+        self.logger = logger
 
     def load_checkpoint(self):
         optimizer_generator, optimizer_discriminator = self.configure_optimizer()
@@ -53,10 +57,10 @@ class GANSynth(nn.Module):
             optimizer_generator.load_state_dict(ckpt["optimizer_gen"])
 
             start_epoch = ckpt["epoch"]
-            print("model parameters loaded from " + self.trained_model_path)
+            self.logger.info("Model parameters loaded from " + self.trained_model_path)
         else:
             start_epoch = 0
-            print("new model")
+            self.logger.info("New model")
 
         return optimizer_discriminator, optimizer_generator, start_epoch
 
@@ -69,13 +73,13 @@ class GANSynth(nn.Module):
         )
         return optimizer_generator, optimizer_discriminator
 
-    def gradient_penalty(self, real, fake, device):
-        alpha = torch.rand((real.size(0), 1, 1, 1)).to(device)
+    def gradient_penalty(self, real, fake):
+        alpha = torch.rand((real.size(0), 1, 1, 1)).to(self.device)
         interpolated_images = (real * alpha + fake * (1 - alpha)).requires_grad_(True)
 
         # Calculate critic scores
         mixed_scores = self.critic(interpolated_images)
-        grad_outputs = torch.ones_like(mixed_scores, device=device, requires_grad=False)
+        grad_outputs = torch.ones_like(mixed_scores, device=self.device, requires_grad=False)
 
         # Take the gradient of the scores with respect to the images
         gradient = torch.autograd.grad(
@@ -92,9 +96,8 @@ class GANSynth(nn.Module):
         return gradient_penalty
 
     def train_step(self):
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         optimizer_critic, optimizer_generator, start_epoch = self.load_checkpoint()
-        print("Optimizers, ok")
+        self.logger.debug("Optimizers: Ok")
 
         for epoch in range(start_epoch, start_epoch + self.num_epochs):
             for n, (real_samples, _, _) in enumerate(self.train_loader):
@@ -108,11 +111,11 @@ class GANSynth(nn.Module):
                     real_samples.size(3),
                     real_samples.size(2),
                 )
-                real_samples = real_samples.to(device)
+                real_samples = real_samples.to(self.device)
 
                 for _ in range(self.critic_iteration):
 
-                    noise = torch.randn(batch_size, self.latent_dim).to(device)
+                    noise = torch.randn(batch_size, self.latent_dim).to(self.device)
                     fake_samples = self.generator(noise)
 
                     # zero the parameter gradients
@@ -122,7 +125,7 @@ class GANSynth(nn.Module):
                     critic_fake = self.critic(fake_samples.detach())
 
                     gp = self.gradient_penalty(
-                        real_samples, fake_samples, device=device
+                        real_samples, fake_samples
                     )
                     loss_critic = (
                         -(torch.mean(critic_real) - torch.mean(critic_fake))
@@ -153,11 +156,11 @@ class GANSynth(nn.Module):
                 optimizer_generator.step()
 
                 # add loss in tensorboard
-                if n % self.add_loss == 0:
-                    print(
+                if n % self.add_loss == 0 and n != 0:
+                    self.logger.info(
                         f"Num_batch: {epoch*len(self.train_loader) + n} Loss D.: {loss_critic}"
                     )
-                    print(
+                    self.logger.info(
                         f"Num_batch: {epoch*len(self.train_loader) + n} Loss G.: {loss_generator}"
                     )
 
@@ -174,9 +177,9 @@ class GANSynth(nn.Module):
                     self.writer.flush()
 
                 # add generated pictures in tensorboard
-                if n % self.add_figure == 0:
+                if n % self.add_figure == 0 and n != 0:
                     latent_space_samples = torch.randn(batch_size, self.latent_dim).to(
-                        device
+                        self.device
                     )
                     generated_samples = self.generator(latent_space_samples)
 
@@ -186,7 +189,7 @@ class GANSynth(nn.Module):
                                 samples.size(0), samples.size(2), samples.size(1)
                             )
                             audio_real = dataset.mel_to_waveform(
-                                samples.detach(), maxi=self.maxi, device=device
+                                samples.detach(), maxi=self.maxi, device=self.device
                             )
                             self.writer.add_audio(
                                 "Real_audio/" + str(i),
@@ -222,7 +225,7 @@ class GANSynth(nn.Module):
                                 samples.size(0), samples.size(2), samples.size(1)
                             )
                             audio_fake = dataset.mel_to_waveform(
-                                samples.detach(), maxi=self.maxi, device=device
+                                samples.detach(), maxi=self.maxi, device=self.device
                             )
                             self.writer.add_audio(
                                 "Fake_audio/" + str(i),
@@ -253,7 +256,7 @@ class GANSynth(nn.Module):
                             break
 
                 # save checkpoint
-                if n % self.save_ckpt == 0:
+                if n % self.save_ckpt == 0 and n != 0:
                     checkpoint = {
                         "epoch": epoch + 1,
                         "n_batch": n,
